@@ -1,156 +1,292 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <!-- 
-        index.html
-        Author: Gokul (copied for inegration)
-        Purpose: Main dashboard 
-        Uses Chart.js for charts and Fetch API to get data from Flask backend
-    -->
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Security Log Triage System</title>
-
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <link rel="stylesheet" href="/static/css/style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SECURETRIAGE // SOC TERMINAL</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
 
-   
-    <header>
-        <div class="header-left">
-            <h1>🛡️ Security Log Triage System</h1>
-            <p class="subtitle">Automated Threat Detection & Alerting</p>
+<canvas id="matrix-canvas"></canvas>
+<div class="scanlines"></div>
+<div class="vignette"></div>
+
+<!-- BOOT LOADER -->
+<div id="loader">
+  <div class="boot-screen">
+    <div class="boot-logo">
+      <div class="shield-outer">
+        <div class="shield-inner">
+          <div class="shield-pulse"></div>
+          <span class="shield-char">⬡</span>
         </div>
-        <div class="header-right">
-            <span id="last-updated">Last updated: Never</span>
+      </div>
+      <div class="boot-title">
+        <div class="glitch-text" data-text="SECURETRIAGE">SECURETRIAGE</div>
+        <div class="boot-subtitle">SECURITY OPERATIONS CENTER v2.4.1</div>
+      </div>
+    </div>
+    <div class="boot-log" id="boot-log"></div>
+    <div class="boot-progress-wrap">
+      <div class="boot-progress-label">
+        <span>INITIALISING SYSTEMS</span>
+        <span id="boot-pct">0%</span>
+      </div>
+      <div class="boot-bar">
+        <div class="boot-bar-fill" id="boot-fill"></div>
+        <div class="boot-bar-glow"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header id="main-header">
+  <div class="hdr-left">
+    <div class="hdr-logo">
+      <span class="hdr-hex">⬡</span>
+      <div>
+        <div class="hdr-title glitch-sm" data-text="SECURETRIAGE">SECURETRIAGE</div>
+        <div class="hdr-sub">AUTOMATED LOG TRIAGE &amp; ALERTING SYSTEM</div>
+      </div>
+    </div>
+  </div>
+  <div class="hdr-center">
+    <div class="radar-wrap">
+      <canvas id="radar-canvas" width="40" height="40"></canvas>
+      <span class="radar-label">LIVE MONITORING</span>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <div class="hdr-stats-row">
+      <div class="hdr-stat">
+        <span class="hdr-stat-label">UPTIME</span>
+        <span class="hdr-stat-val" id="uptime">00:00:00</span>
+      </div>
+      <div class="hdr-sep"></div>
+      <div class="hdr-stat">
+        <span class="hdr-stat-label">UPDATED</span>
+        <span class="hdr-stat-val" id="last-updated">--:--:--</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main>
+
+  <!-- THREAT TICKER -->
+  <div class="ticker-wrap">
+    <div class="ticker-label">// LIVE FEED</div>
+    <div class="ticker-track">
+      <div class="ticker-content" id="ticker-content">
+        SYSTEM ONLINE &nbsp;◆&nbsp; AWAITING LOG ANALYSIS &nbsp;◆&nbsp; ALL SYSTEMS NOMINAL &nbsp;◆&nbsp; RUN ANALYSIS TO BEGIN &nbsp;◆&nbsp;
+      </div>
+    </div>
+  </div>
+
+  <!-- CONTROL PANEL -->
+  <section class="ctrl-panel">
+    <div class="ctrl-panel-header">
+      <span class="panel-tag">// CONTROL</span>
+      <div class="ctrl-divider"></div>
+    </div>
+    <div class="ctrl-row">
+      <div class="ctrl-left">
+        <button id="btn-analyse" class="cmd-btn primary">
+          <span class="cmd-prefix">&gt;_</span>
+          <span class="cmd-text">RUN ANALYSIS</span>
+          <span class="cmd-hotkey">CTRL+R</span>
+          <div class="cmd-sweep"></div>
+        </button>
+        <button id="btn-refresh" class="cmd-btn secondary">
+          <span class="cmd-prefix">↻</span>
+          <span class="cmd-text">REFRESH</span>
+        </button>
+        <button id="btn-clear" class="cmd-btn danger">
+          <span class="cmd-prefix">⌫</span>
+          <span class="cmd-text">FLUSH DB</span>
+        </button>
+      </div>
+      <div class="ctrl-right">
+        <div class="upload-zone" id="upload-zone">
+          <select id="log-type-select" class="sel">
+            <option value="ssh">[ SSH / AUTH ]</option>
+            <option value="firewall">[ FIREWALL ]</option>
+            <option value="apache">[ APACHE ]</option>
+          </select>
+          <label class="file-drop" id="file-label">
+            <input type="file" id="file-upload" accept=".log,.txt">
+            <span class="file-icon-wrap">⬆</span>
+            <span id="file-name-disp">DROP LOG FILE HERE</span>
+          </label>
+          <button id="btn-upload" class="cmd-btn upload">
+            <span class="cmd-prefix">⬆</span>
+            <span class="cmd-text">INGEST</span>
+          </button>
         </div>
-    </header>
+      </div>
+    </div>
+  </section>
 
-    <main>
+  <!-- STATUS -->
+  <div id="status-bar" class="status-bar hidden">
+    <div class="status-left">
+      <div class="status-blink"></div>
+      <span class="status-prefix">[SYS]</span>
+      <span id="status-message">PROCESSING...</span>
+    </div>
+    <button onclick="hideStatus()" class="status-x">✕</button>
+  </div>
 
-        <section class="controls">
-            <button id="btn-analyse" class="btn btn-primary">
-                ▶ Run Analysis
-            </button>
-            <button id="btn-refresh" class="btn btn-secondary">
-                🔄 Refresh Dashboard
-            </button>
-            <button id="btn-clear" class="btn btn-danger">
-                🗑 Clear All Alerts
-            </button>
+  <!-- METRIC CARDS -->
+  <section class="metrics-grid">
+    <div class="metric-card mc-total" id="mc-0">
+      <div class="mc-bg-text">TOTAL</div>
+      <div class="mc-top">
+        <span class="mc-label">TOTAL EVENTS</span>
+        <span class="mc-icon-box">⬡</span>
+      </div>
+      <div class="mc-val" id="total-count">0</div>
+      <div class="mc-bar"><div class="mc-bar-fill" style="--c:#00d4ff"></div></div>
+      <div class="mc-scan"></div>
+    </div>
+    <div class="metric-card mc-crit" id="mc-1">
+      <div class="mc-bg-text">CRIT</div>
+      <div class="mc-top">
+        <span class="mc-label">CRITICAL</span>
+        <span class="mc-icon-box" style="color:#ff2a2a">◈</span>
+      </div>
+      <div class="mc-val" id="critical-count" style="color:#ff2a2a">0</div>
+      <div class="mc-bar"><div class="mc-bar-fill" style="--c:#ff2a2a"></div></div>
+      <div class="mc-scan"></div>
+    </div>
+    <div class="metric-card mc-high" id="mc-2">
+      <div class="mc-bg-text">HIGH</div>
+      <div class="mc-top">
+        <span class="mc-label">HIGH</span>
+        <span class="mc-icon-box" style="color:#ff8c00">◈</span>
+      </div>
+      <div class="mc-val" id="high-count" style="color:#ff8c00">0</div>
+      <div class="mc-bar"><div class="mc-bar-fill" style="--c:#ff8c00"></div></div>
+      <div class="mc-scan"></div>
+    </div>
+    <div class="metric-card mc-med" id="mc-3">
+      <div class="mc-bg-text">MED</div>
+      <div class="mc-top">
+        <span class="mc-label">MEDIUM</span>
+        <span class="mc-icon-box" style="color:#ffd700">◈</span>
+      </div>
+      <div class="mc-val" id="medium-count" style="color:#ffd700">0</div>
+      <div class="mc-bar"><div class="mc-bar-fill" style="--c:#ffd700"></div></div>
+      <div class="mc-scan"></div>
+    </div>
+    <div class="metric-card mc-low" id="mc-4">
+      <div class="mc-bg-text">LOW</div>
+      <div class="mc-top">
+        <span class="mc-label">LOW</span>
+        <span class="mc-icon-box" style="color:#00ff41">◈</span>
+      </div>
+      <div class="mc-val" id="low-count" style="color:#00ff41">0</div>
+      <div class="mc-bar"><div class="mc-bar-fill" style="--c:#00ff41"></div></div>
+      <div class="mc-scan"></div>
+    </div>
+  </section>
 
-            <div class="upload-group">
-                <select id="log-type-select">
-                    <option value="ssh">SSH / Auth Log</option>
-                    <option value="firewall">Firewall Log</option>
-                    <option value="apache">Apache Access Log</option>
-                </select>
-                <input type="file" id="file-upload" accept=".log,.txt">
-                <button id="btn-upload" class="btn btn-secondary">
-                    📂 Upload Log File
-                </button>
+  <!-- CHARTS -->
+  <section class="charts-grid">
+    <div class="chart-panel cp-left">
+      <div class="panel-hdr">
+        <span class="panel-tag">// SEVERITY MATRIX</span>
+        <div class="panel-dots"><span></span><span></span><span></span></div>
+      </div>
+      <div class="chart-inner">
+        <canvas id="severity-chart"></canvas>
+      </div>
+    </div>
+    <div class="chart-panel cp-right">
+      <div class="panel-hdr">
+        <span class="panel-tag">// TOP THREAT VECTORS</span>
+        <div class="panel-dots"><span></span><span></span><span></span></div>
+      </div>
+      <div class="chart-inner">
+        <canvas id="ip-chart"></canvas>
+      </div>
+    </div>
+  </section>
+
+  <!-- ALERT TABLE -->
+  <section class="table-panel">
+    <div class="panel-hdr">
+      <span class="panel-tag">// ALERT FEED</span>
+      <div class="filter-row">
+        <button class="flt active" data-severity="ALL">ALL</button>
+        <button class="flt" data-severity="CRITICAL">CRIT</button>
+        <button class="flt" data-severity="HIGH">HIGH</button>
+        <button class="flt" data-severity="MEDIUM">MED</button>
+        <button class="flt" data-severity="LOW">LOW</button>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>SEVERITY</th><th>SCORE</th><th>EVENT TYPE</th>
+            <th>SOURCE IP</th><th>TIMESTAMP</th><th>SOURCE</th><th>RAW LOG</th>
+          </tr>
+        </thead>
+        <tbody id="alerts-body">
+          <tr><td colspan="7" class="empty-cell">
+            <div class="empty-state">
+              <div class="empty-hex">⬡</div>
+              <div class="empty-text">AWAITING INPUT — RUN ANALYSIS TO POPULATE</div>
+              <div class="empty-cursor">_</div>
             </div>
-        </section>
+          </td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
 
-        <div id="status-bar" class="status-bar hidden">
-            <span id="status-message">Processing...</span>
-        </div>
-
-        <section class="summary-cards">
-            <div class="card card-total">
-                <h3>Total Events</h3>
-                <p id="total-count">0</p>
+  <!-- BLACKLIST -->
+  <section class="table-panel bl-panel">
+    <div class="panel-hdr">
+      <span class="panel-tag" style="color:#ff2a2a">// BLACKLISTED IPs</span>
+      <span class="panel-badge">AUTO-DETECTED</span>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead>
+          <tr><th>IP ADDRESS</th><th>REASON</th><th>FLAGGED AT</th></tr>
+        </thead>
+        <tbody id="blacklist-body">
+          <tr><td colspan="3" class="empty-cell">
+            <div class="empty-state">
+              <div class="empty-hex" style="color:#00ff41">✓</div>
+              <div class="empty-text">NO THREATS DETECTED — SYSTEM CLEAN</div>
             </div>
-            <div class="card card-critical">
-                <h3>🔴 Critical</h3>
-                <p id="critical-count">0</p>
-            </div>
-            <div class="card card-high">
-                <h3>🟠 High</h3>
-                <p id="high-count">0</p>
-            </div>
-            <div class="card card-medium">
-                <h3>🟡 Medium</h3>
-                <p id="medium-count">0</p>
-            </div>
-            <div class="card card-low">
-                <h3>🟢 Low</h3>
-                <p id="low-count">0</p>
-            </div>
-        </section>
+          </td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
 
-        <section class="charts-row">
-            <div class="chart-box">
-                <h2>Severity Breakdown</h2>
-                <canvas id="severity-chart"></canvas>
-            </div>
-            <div class="chart-box">
-                <h2>Top Suspicious IPs</h2>
-                <canvas id="ip-chart"></canvas>
-            </div>
-        </section>
+</main>
 
-        <section class="filter-bar">
-            <h2>Alert Feed</h2>
-            <div class="filter-buttons">
-                <button class="filter-btn active" data-severity="ALL">All</button>
-                <button class="filter-btn critical" data-severity="CRITICAL">Critical</button>
-                <button class="filter-btn high" data-severity="HIGH">High</button>
-                <button class="filter-btn medium" data-severity="MEDIUM">Medium</button>
-                <button class="filter-btn low" data-severity="LOW">Low</button>
-            </div>
-        </section>
+<footer>
+  <div class="ftr-inner">
+    <span>SECURETRIAGE SOC TERMINAL</span>
+    <span class="ftr-sep">//</span>
+    <span>DBS MSc CYBERSECURITY 2024</span>
+    <span class="ftr-sep">//</span>
+    <span>YUVA · GOKUL · ADITH</span>
+    <span class="ftr-sep">//</span>
+    <span id="ftr-time"></span>
+  </div>
+</footer>
 
-        <section class="table-section">
-            <table id="alerts-table">
-                <thead>
-                    <tr>
-                        <th>Severity</th>
-                        <th>Score</th>
-                        <th>Event Type</th>
-                        <th>Source IP</th>
-                        <th>Timestamp</th>
-                        <th>Log Source</th>
-                        <th>Raw Log</th>
-                    </tr>
-                </thead>
-                <tbody id="alerts-body">
-                    <tr>
-                        <td colspan="7" class="empty-msg">
-                            Click "Run Analysis" to load alerts
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </section>
-
-        <section class="blacklist-section">
-            <h2>🚫 Blacklisted IPs</h2>
-            <table id="blacklist-table">
-                <thead>
-                    <tr>
-                        <th>IP Address</th>
-                        <th>Reason</th>
-                        <th>Flagged At</th>
-                    </tr>
-                </thead>
-                <tbody id="blacklist-body">
-                    <tr>
-                        <td colspan="3" class="empty-msg">No blacklisted IPs yet</td>
-                    </tr>
-                </tbody>
-            </table>
-        </section>
-
-    </main>
-
-    <footer>
-        <p>Automated Security Log Triage System — DBS MSc Cybersecurity 2024</p>
-    </footer>
-
-    <script src="/static/js/dashboard.js"></script>
-
+<script src="/static/js/dashboard.js"></script>
 </body>
 </html>
