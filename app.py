@@ -2,7 +2,8 @@
 # Author: Yuva
 # Purpose: Main Flask web application 
 # Acts as the backend API server for the dashboard
-
+import os
+from notifier import check_and_notify
 from flask import Flask, jsonify, request, render_template
 from log_parser import parse_log_file
 from triage_engine import triage_all_events, get_summary
@@ -71,6 +72,9 @@ def process_and_store_logs(filepath, log_type):
                 event.get("source_ip", "unknown"),
                 f"Auto-blacklisted: {event.get('event_type')}"
             )
+
+    
+    check_and_notify(triaged)
 
     return triaged
 
@@ -228,4 +232,5 @@ if __name__ == "__main__":
     print("[APP] Security Log Triage System starting...")
     print("[APP] Open your browser and go to: http://127.0.0.1:5000")
 
-    app.run(debug=True)
+
+    app.run(debug=True, port=5001)
