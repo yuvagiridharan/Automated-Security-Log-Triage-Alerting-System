@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <!-- 
+        index.html
+        Author: Gokul (copied for inegration)
+        Purpose: Main dashboard 
+        Uses Chart.js for charts and Fetch API to get data from Flask backend
+    -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Log Triage System</title>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+
+   
+    <header>
+        <div class="header-left">
+            <h1>🛡️ Security Log Triage System</h1>
+            <p class="subtitle">Automated Threat Detection & Alerting</p>
+        </div>
+        <div class="header-right">
+            <span id="last-updated">Last updated: Never</span>
+        </div>
+    </header>
+
+    <main>
+
+        <section class="controls">
+            <button id="btn-analyse" class="btn btn-primary">
+                ▶ Run Analysis
+            </button>
+            <button id="btn-refresh" class="btn btn-secondary">
+                🔄 Refresh Dashboard
+            </button>
+            <button id="btn-clear" class="btn btn-danger">
+                🗑 Clear All Alerts
+            </button>
+
+            <div class="upload-group">
+                <select id="log-type-select">
+                    <option value="ssh">SSH / Auth Log</option>
+                    <option value="firewall">Firewall Log</option>
+                    <option value="apache">Apache Access Log</option>
+                </select>
+                <input type="file" id="file-upload" accept=".log,.txt">
+                <button id="btn-upload" class="btn btn-secondary">
+                    📂 Upload Log File
+                </button>
+            </div>
+        </section>
+
+        <div id="status-bar" class="status-bar hidden">
+            <span id="status-message">Processing...</span>
+        </div>
+
+        <section class="summary-cards">
+            <div class="card card-total">
+                <h3>Total Events</h3>
+                <p id="total-count">0</p>
+            </div>
+            <div class="card card-critical">
+                <h3>🔴 Critical</h3>
+                <p id="critical-count">0</p>
+            </div>
+            <div class="card card-high">
+                <h3>🟠 High</h3>
+                <p id="high-count">0</p>
+            </div>
+            <div class="card card-medium">
+                <h3>🟡 Medium</h3>
+                <p id="medium-count">0</p>
+            </div>
+            <div class="card card-low">
+                <h3>🟢 Low</h3>
+                <p id="low-count">0</p>
+            </div>
+        </section>
+
+        <section class="charts-row">
+            <div class="chart-box">
+                <h2>Severity Breakdown</h2>
+                <canvas id="severity-chart"></canvas>
+            </div>
+            <div class="chart-box">
+                <h2>Top Suspicious IPs</h2>
+                <canvas id="ip-chart"></canvas>
+            </div>
+        </section>
+
+        <section class="filter-bar">
+            <h2>Alert Feed</h2>
+            <div class="filter-buttons">
+                <button class="filter-btn active" data-severity="ALL">All</button>
+                <button class="filter-btn critical" data-severity="CRITICAL">Critical</button>
+                <button class="filter-btn high" data-severity="HIGH">High</button>
+                <button class="filter-btn medium" data-severity="MEDIUM">Medium</button>
+                <button class="filter-btn low" data-severity="LOW">Low</button>
+            </div>
+        </section>
+
+        <section class="table-section">
+            <table id="alerts-table">
+                <thead>
+                    <tr>
+                        <th>Severity</th>
+                        <th>Score</th>
+                        <th>Event Type</th>
+                        <th>Source IP</th>
+                        <th>Timestamp</th>
+                        <th>Log Source</th>
+                        <th>Raw Log</th>
+                    </tr>
+                </thead>
+                <tbody id="alerts-body">
+                    <tr>
+                        <td colspan="7" class="empty-msg">
+                            Click "Run Analysis" to load alerts
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="blacklist-section">
+            <h2>🚫 Blacklisted IPs</h2>
+            <table id="blacklist-table">
+                <thead>
+                    <tr>
+                        <th>IP Address</th>
+                        <th>Reason</th>
+                        <th>Flagged At</th>
+                    </tr>
+                </thead>
+                <tbody id="blacklist-body">
+                    <tr>
+                        <td colspan="3" class="empty-msg">No blacklisted IPs yet</td>
+                    </tr>
+                </tbody>
+            </table>
+        </section>
+
+    </main>
+
+    <footer>
+        <p>Automated Security Log Triage System — DBS MSc Cybersecurity 2024</p>
+    </footer>
+
+    <script src="/static/js/dashboard.js"></script>
+
+</body>
+</html>
