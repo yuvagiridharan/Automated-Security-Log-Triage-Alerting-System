@@ -230,7 +230,7 @@ def clear():
 if __name__ == "__main__":
     create_tables()
     print("[APP] Security Log Triage System starting...")
-    print("[APP] Open your browser and go to: http://127.0.0.1:5000")
+    print("[APP] Open your browser and go to: http://127.0.0.1:5001")
 
 
     app.run(debug=True, port=5001)
